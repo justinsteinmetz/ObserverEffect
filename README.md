@@ -1,4 +1,6 @@
 https://justinsteinmetz.github.io/ObserverEffect/
+https://justinsteinmetz.github.io/ObserverEffect/teacher.html
+https://justinsteinmetz.github.io/ObserverEffect/slides.html
 
 
 
