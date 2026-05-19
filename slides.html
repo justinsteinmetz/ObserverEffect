@@ -524,6 +524,13 @@
     font-style: italic;
   }
 
+  .reveal-list li .ex-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    flex: 1;
+  }
+
   .reveal-list li .ex-text {
     display: none;
   }
@@ -536,12 +543,26 @@
     user-select: none;
   }
 
+  .reveal-list li .ex-q {
+    display: none;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: clamp(11px, 1.1vw, 13px);
+    font-style: italic;
+    color: var(--alert);
+    margin-top: 6px;
+    font-weight: 300;
+  }
+
   .reveal-list li.lit .ex-text {
-    display: inline;
+    display: block;
   }
 
   .reveal-list li.lit .ex-redacted {
     display: none;
+  }
+
+  .reveal-list li.lit .ex-q {
+    display: block;
   }
 
   /* Reveal list for examples */
@@ -722,10 +743,38 @@
       <div class="label">Documented cases</div>
       <div class="h2">Where does it happen?</div>
       <ul class="reveal-list" id="ex-list">
-        <li id="ex0"><span class="n">01</span><span class="ex-text">Speed cameras — drivers slow down, then immediately accelerate once past</span><span class="ex-redacted">████████████████████████████████████████</span></li>
-        <li id="ex1"><span class="n">02</span><span class="ex-text">Hawthorne factory, 1920s — workers produced more simply because they knew they were being studied</span><span class="ex-redacted">████████████████████████████████████████████████████</span></li>
-        <li id="ex2"><span class="n">03</span><span class="ex-text">Wildlife documentaries — animal behaviour shifts near a camera crew</span><span class="ex-redacted">████████████████████████████████████</span></li>
-        <li id="ex3"><span class="n">04</span><span class="ex-text">This room. Right now.</span><span class="ex-redacted">█████████████</span></li>
+        <li id="ex0">
+          <span class="n">01</span>
+          <span class="ex-content">
+            <span class="ex-text">Speed cameras — drivers slow down, then immediately accelerate once past</span>
+            <span class="ex-redacted">████████████████████████████████████████</span>
+            <span class="ex-q">The driver slows down, then speeds up again. Did the camera change anything?</span>
+          </span>
+        </li>
+        <li id="ex1">
+          <span class="n">02</span>
+          <span class="ex-content">
+            <span class="ex-text">Hawthorne factory, 1920s — workers produced more simply because they knew they were being studied</span>
+            <span class="ex-redacted">████████████████████████████████████████████████████</span>
+            <span class="ex-q">Nothing in the factory actually improved. So what caused the change in productivity?</span>
+          </span>
+        </li>
+        <li id="ex2">
+          <span class="n">03</span>
+          <span class="ex-content">
+            <span class="ex-text">Wildlife documentaries — animal behaviour shifts near a camera crew</span>
+            <span class="ex-redacted">████████████████████████████████████</span>
+            <span class="ex-q">Can you film natural behaviour? Or does filming make natural behaviour impossible?</span>
+          </span>
+        </li>
+        <li id="ex3">
+          <span class="n">04</span>
+          <span class="ex-content">
+            <span class="ex-text">This room. Right now.</span>
+            <span class="ex-redacted">█████████████</span>
+            <span class="ex-q">—</span>
+          </span>
+        </li>
       </ul>
       <div class="body" style="margin-top: 8px; font-size: 12px; color: var(--muted)">Click or press space to reveal.</div>
     </div>
