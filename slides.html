@@ -524,6 +524,26 @@
     font-style: italic;
   }
 
+  .reveal-list li .ex-text {
+    display: none;
+  }
+
+  .reveal-list li .ex-redacted {
+    color: var(--text);
+    letter-spacing: 0.05em;
+    font-size: clamp(12px, 1.3vw, 15px);
+    opacity: 0.85;
+    user-select: none;
+  }
+
+  .reveal-list li.lit .ex-text {
+    display: inline;
+  }
+
+  .reveal-list li.lit .ex-redacted {
+    display: none;
+  }
+
   /* Reveal list for examples */
   .reveal-list {
     list-style: none;
@@ -702,10 +722,10 @@
       <div class="label">Documented cases</div>
       <div class="h2">Where does it happen?</div>
       <ul class="reveal-list" id="ex-list">
-        <li id="ex0"><span class="n">01</span>Speed cameras — drivers slow down, then immediately accelerate once past</li>
-        <li id="ex1"><span class="n">02</span>Hawthorne factory, 1920s — workers produced more simply because they knew they were being studied</li>
-        <li id="ex2"><span class="n">03</span>Wildlife documentaries — animal behaviour shifts near a camera crew</li>
-        <li id="ex3"><span class="n">04</span>This room. Right now.</li>
+        <li id="ex0"><span class="n">01</span><span class="ex-text">Speed cameras — drivers slow down, then immediately accelerate once past</span><span class="ex-redacted">████████████████████████████████████████</span></li>
+        <li id="ex1"><span class="n">02</span><span class="ex-text">Hawthorne factory, 1920s — workers produced more simply because they knew they were being studied</span><span class="ex-redacted">████████████████████████████████████████████████████</span></li>
+        <li id="ex2"><span class="n">03</span><span class="ex-text">Wildlife documentaries — animal behaviour shifts near a camera crew</span><span class="ex-redacted">████████████████████████████████████</span></li>
+        <li id="ex3"><span class="n">04</span><span class="ex-text">This room. Right now.</span><span class="ex-redacted">█████████████</span></li>
       </ul>
       <div class="body" style="margin-top: 8px; font-size: 12px; color: var(--muted)">Click or press space to reveal.</div>
     </div>
