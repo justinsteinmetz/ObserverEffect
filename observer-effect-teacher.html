@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OBS/04 — Teacher Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F2F1EE;
+    --surface: #FFFFFF;
+    --border: #CACAC5;
+    --border-hard: #1A1A1A;
+    --text: #0F0F0F;
+    --mid: #444440;
+    --muted: #999994;
+    --alert: #1A1AFF;
+    --alert-bg: #EEEEFF;
+    --warn: #CC3300;
+    --correct: #1A6634;
+    --correct-bg: #EEF7F1;
+    --locked: #E0DDD8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  /* Chrome */
+  .chrome {
+    background: var(--text);
+    color: var(--bg);
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .chrome-id { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #aaa; }
+  .chrome-title { font-size: 13px; font-weight: 600; letter-spacing: 0.05em; }
+  .chrome-blink { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: #ff6644; animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .wrap { max-width: 600px; margin: 0 auto; padding: 24px 20px; }
+
+  /* Section */
+  .section-label {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Phase cards */
+  .phase-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+
+  .phase-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--border);
+    padding: 16px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: border-left-color 0.2s;
+  }
+
+  .phase-card.active-phase { border-left-color: var(--alert); }
+  .phase-card.done-phase { border-left-color: var(--correct); background: var(--correct-bg); }
+
+  .phase-info {}
+  .phase-name { font-size: 12px; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .phase-desc { font-size: 11px; color: var(--muted); font-family: 'IBM Plex Sans', sans-serif; font-weight: 300; }
+
+  .unlock-btn {
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+  }
+
+  .unlock-btn:hover { opacity: 0.75; }
+  .unlock-btn:disabled { opacity: 0.25; cursor: default; }
+  .unlock-btn.done { background: var(--correct); }
+
+  /* Status indicator */
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--warn);
+    animation: pulse 1.5s infinite;
+    flex-shrink: 0;
+  }
+
+  .status-dot.live { background: var(--correct); animation: none; }
+
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.3)} }
+
+  .status-text { font-size: 11px; color: var(--mid); font-family: 'IBM Plex Sans', sans-serif; }
+  .status-text strong { font-family: 'IBM Plex Mono', monospace; color: var(--text); }
+
+  /* Reset */
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--warn);
+    color: var(--warn);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    cursor: pointer;
+    margin-bottom: 32px;
+    transition: all 0.15s;
+  }
+
+  .reset-btn:hover { background: var(--warn); color: white; }
+
+  /* Sentences */
+  .sentences-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .sentence-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    animation: slideIn 0.3s ease;
+    transition: border-left-color 0.2s;
+  }
+
+  .sentence-card.projected { border-left-color: var(--alert); background: var(--alert-bg); }
+
+  @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+
+  .sentence-text {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .project-btn {
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+  }
+
+  .project-btn:hover { opacity: 0.75; }
+  .project-btn.active { background: var(--alert); }
+  .project-btn.active:hover { opacity: 0.85; }
+
+  .no-sentences {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
+    padding: 20px 0;
+    text-align: center;
+  }
+
+  .sentence-time {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+
+  .spacer { height: 20px; }
+</style>
+</head>
+<body>
+
+<div class="chrome">
+  <span class="chrome-id">Teacher Panel</span>
+  <span class="chrome-title">OBS/04/8B</span>
+  <span class="chrome-blink" id="live-indicator">● Connecting</span>
+</div>
+
+<div class="wrap">
+
+  <!-- Status -->
+  <div class="spacer"></div>
+  <div class="status-row">
+    <div class="status-dot" id="status-dot"></div>
+    <div class="status-text">Current phase: <strong id="current-phase">waiting</strong></div>
+  </div>
+
+  <!-- Phase controls -->
+  <div class="section-label">Session control</div>
+  <div class="phase-grid">
+
+    <div class="phase-card" id="card-open0">
+      <div class="phase-info">
+        <div class="phase-name">Open — Screen 0</div>
+        <div class="phase-desc">Intro + opening free-write. Students see the tool.</div>
+      </div>
+      <button class="unlock-btn" id="btn-open0" onclick="unlock('open0')">Unlock →</button>
+    </div>
+
+    <div class="phase-card" id="card-open1">
+      <div class="phase-info">
+        <div class="phase-name">Open — Part One</div>
+        <div class="phase-desc">Passive voice tasks. Use after Slide 06.</div>
+      </div>
+      <button class="unlock-btn" id="btn-open1" onclick="unlock('open1')" disabled>Unlock →</button>
+    </div>
+
+    <div class="phase-card" id="card-open2">
+      <div class="phase-info">
+        <div class="phase-name">Open — Part Two</div>
+        <div class="phase-desc">Surveillance notice. Use after Slide 10.</div>
+      </div>
+      <button class="unlock-btn" id="btn-open2" onclick="unlock('open2')" disabled>Unlock →</button>
+    </div>
+
+  </div>
+
+  <button class="reset-btn" onclick="resetSession()">↺ Reset session</button>
+
+  <!-- Sentences -->
+  <div class="section-label">Final sentences — incoming</div>
+  <div class="sentences-list" id="sentences-list">
+    <div class="no-sentences" id="no-sentences-msg">No sentences submitted yet.</div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, onValue, remove, update }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const app = initializeApp({
+  databaseURL: "https://grammarblitz-12d4d-default-rtdb.europe-west1.firebasedatabase.app"
+});
+const db = getDatabase(app);
+const sessionRef = ref(db, 'obs04/session');
+const sentencesRef = ref(db, 'obs04/sentences');
+
+const phaseOrder = ['waiting', 'open0', 'open1', 'open2'];
+let currentPhase = 'waiting';
+let projectedKey = null;
+
+// Listen session
+onValue(sessionRef, snap => {
+  const state = snap.val() || {};
+  currentPhase = state.phase || 'waiting';
+  updateUI();
+  document.getElementById('live-indicator').textContent = '● Live';
+  document.getElementById('status-dot').classList.add('live');
+});
+
+// Listen sentences
+onValue(sentencesRef, snap => {
+  const data = snap.val() || {};
+  renderSentences(data);
+});
+
+function updateUI() {
+  document.getElementById('current-phase').textContent = currentPhase;
+
+  const phases = ['open0', 'open1', 'open2'];
+  const currentIdx = phaseOrder.indexOf(currentPhase);
+
+  phases.forEach((phase, i) => {
+    const card = document.getElementById('card-' + phase);
+    const btn = document.getElementById('btn-' + phase);
+    const phaseIdx = phaseOrder.indexOf(phase);
+
+    if (phaseIdx < currentIdx) {
+      card.classList.add('done-phase');
+      card.classList.remove('active-phase');
+      btn.textContent = '✓ Done';
+      btn.classList.add('done');
+      btn.disabled = true;
+    } else if (phaseIdx === currentIdx) {
+      card.classList.add('active-phase');
+      btn.textContent = '✓ Active';
+      btn.disabled = true;
+    } else if (phaseIdx === currentIdx + 1) {
+      btn.disabled = false;
+      btn.textContent = 'Unlock →';
+    } else {
+      btn.disabled = true;
+    }
+  });
+}
+
+window.unlock = function(phase) {
+  set(sessionRef, { phase }).then(() => {
+    currentPhase = phase;
+    updateUI();
+  });
+};
+
+window.resetSession = function() {
+  if (!confirm('Reset session? This will lock all sections and clear sentences.')) return;
+  set(sessionRef, { phase: 'waiting' });
+  remove(sentencesRef);
+  projectedKey = null;
+};
+
+function renderSentences(data) {
+  const list = document.getElementById('sentences-list');
+  const noMsg = document.getElementById('no-sentences-msg');
+  const entries = Object.entries(data).sort((a, b) => a[1].ts - b[1].ts);
+
+  if (entries.length === 0) {
+    noMsg.style.display = 'block';
+    // Remove all cards
+    list.querySelectorAll('.sentence-card').forEach(c => c.remove());
+    return;
+  }
+
+  noMsg.style.display = 'none';
+
+  // Update or add cards
+  const existingIds = new Set([...list.querySelectorAll('.sentence-card')].map(c => c.dataset.key));
+  const newIds = new Set(entries.map(([k]) => k));
+
+  // Remove old
+  existingIds.forEach(id => {
+    if (!newIds.has(id)) list.querySelector(`[data-key="${id}"]`)?.remove();
+  });
+
+  entries.forEach(([key, val]) => {
+    let card = list.querySelector(`[data-key="${key}"]`);
+    if (!card) {
+      card = document.createElement('div');
+      card.className = 'sentence-card';
+      card.dataset.key = key;
+
+      const textDiv = document.createElement('div');
+      textDiv.className = 'sentence-text';
+
+      const sentenceP = document.createElement('div');
+      sentenceP.className = 'sentence-main';
+      sentenceP.textContent = val.text;
+
+      const timeP = document.createElement('div');
+      timeP.className = 'sentence-time';
+      timeP.textContent = new Date(val.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+
+      textDiv.appendChild(sentenceP);
+      textDiv.appendChild(timeP);
+
+      const btn = document.createElement('button');
+      btn.className = 'project-btn';
+      btn.textContent = 'Project';
+      btn.onclick = () => projectSentence(key, val.text, btn);
+
+      card.appendChild(textDiv);
+      card.appendChild(btn);
+      list.appendChild(card);
+    }
+
+    // Update projected state
+    if (val.projected) {
+      card.classList.add('projected');
+      card.querySelector('.project-btn').classList.add('active');
+      card.querySelector('.project-btn').textContent = 'Projecting';
+    }
+  });
+}
+
+function projectSentence(key, text, btn) {
+  // Un-project previous
+  if (projectedKey && projectedKey !== key) {
+    update(ref(db, `obs04/sentences/${projectedKey}`), { projected: false });
+    const prevCard = document.querySelector(`[data-key="${projectedKey}"]`);
+    if (prevCard) {
+      prevCard.classList.remove('projected');
+      prevCard.querySelector('.project-btn').classList.remove('active');
+      prevCard.querySelector('.project-btn').textContent = 'Project';
+    }
+  }
+
+  // Toggle
+  if (projectedKey === key) {
+    update(ref(db, `obs04/sentences/${key}`), { projected: false });
+    set(ref(db, 'obs04/projected'), null);
+    projectedKey = null;
+    btn.classList.remove('active');
+    btn.textContent = 'Project';
+    document.querySelector(`[data-key="${key}"]`).classList.remove('projected');
+  } else {
+    update(ref(db, `obs04/sentences/${key}`), { projected: true });
+    set(ref(db, 'obs04/projected'), { text, key });
+    projectedKey = key;
+    btn.classList.add('active');
+    btn.textContent = 'Projecting';
+    document.querySelector(`[data-key="${key}"]`).classList.add('projected');
+  }
+}
+</script>
+</body>
+</html>

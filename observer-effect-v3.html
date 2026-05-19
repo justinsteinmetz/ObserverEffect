@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Observer Effect</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F2F1EE;
+    --surface: #FFFFFF;
+    --surface2: #E8E6E1;
+    --border: #CACAC5;
+    --border-hard: #1A1A1A;
+    --text: #0F0F0F;
+    --mid: #444440;
+    --muted: #999994;
+    --alert: #1A1AFF;
+    --alert-bg: #EEEEFF;
+    --warn: #CC3300;
+    --correct: #1A6634;
+    --correct-bg: #EEF7F1;
+    --wrong: #CC3300;
+    --wrong-bg: #FFF0EE;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+  }
+
+  /* Chrome */
+  .chrome {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border-hard);
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+  }
+
+  .chrome-id { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+  .chrome-blink { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--warn); animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.15} }
+
+  /* Pages */
+  .page { display: none; max-width: 680px; margin: 0 auto; padding: 0 20px 80px; animation: fadeIn 0.3s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  /* Holding screen */
+  .holding {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 70vh;
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .holding.active { display: flex; }
+
+  .holding-label {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 32px;
+  }
+
+  .holding-title {
+    font-size: clamp(18px, 4vw, 28px);
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 16px;
+    line-height: 1.3;
+  }
+
+  .holding-sub {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .holding-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--warn);
+    margin: 32px auto 0;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100%{transform:scale(1);opacity:1}
+    50%{transform:scale(1.4);opacity:0.4}
+  }
+
+  /* Typography */
+  .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .eyebrow::before { content:''; display:inline-block; width:12px; height:1px; background:var(--muted); }
+
+  h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(32px,8vw,52px);
+    font-weight: 600;
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  h1 .invert { background: var(--text); color: var(--bg); padding: 0 6px; }
+  h1 .alert-col { color: var(--alert); }
+
+  h2 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(18px,4vw,26px);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  .subtitle {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border-hard);
+  }
+
+  .section-intro {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--mid);
+    line-height: 1.7;
+    margin-bottom: 24px;
+  }
+
+  /* Score bar */
+  .score-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid var(--border-hard);
+    padding: 10px 16px;
+    margin-bottom: 24px;
+    background: var(--surface);
+  }
+  .score-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+  .score-val { font-size: 22px; font-weight: 600; color: var(--alert); min-width: 32px; letter-spacing: -0.02em; }
+  .score-total { font-size: 11px; color: var(--muted); }
+
+  /* Question blocks */
+  .q-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border-hard);
+    padding: 20px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s, border-left-color 0.2s;
+  }
+  .q-block.answered-correct { border-color: var(--correct); border-left-color: var(--correct); }
+  .q-block.answered-wrong { border-color: var(--wrong); border-left-color: var(--wrong); }
+
+  .q-number { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .q-prompt { font-size: 14px; color: var(--text); margin-bottom: 14px; line-height: 1.7; }
+  .q-prompt strong { color: var(--alert); font-weight: 500; }
+  .hint { font-size: 12px; color: var(--muted); font-style: italic; margin-bottom: 12px; font-family: 'IBM Plex Sans', sans-serif; }
+
+  /* Inputs */
+  .answer-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-bottom: 2px solid var(--border-hard);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-bottom-color 0.15s;
+  }
+  .answer-input:focus { border-bottom-color: var(--alert); }
+  .answer-input:disabled { opacity: 0.5; background: var(--surface2); }
+
+  .check-btn {
+    margin-top: 12px;
+    background: var(--text);
+    border: none;
+    color: var(--bg);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 8px 18px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .check-btn:hover { opacity: 0.75; }
+  .check-btn:disabled { opacity: 0.2; cursor: default; }
+
+  .feedback { margin-top: 10px; font-size: 12px; padding: 10px 12px; display: none; line-height: 1.6; font-family: 'IBM Plex Sans', sans-serif; }
+  .feedback.show { display: block; }
+  .feedback.correct { background: var(--correct-bg); border-left: 2px solid var(--correct); color: var(--correct); }
+  .feedback.wrong { background: var(--wrong-bg); border-left: 2px solid var(--wrong); color: var(--wrong); }
+  .feedback .model { margin-top: 5px; color: var(--alert); font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+
+  .divider { border: none; border-top: 1px solid var(--border-hard); margin: 28px 0; }
+  .divider-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; margin-top: -4px; }
+
+  /* Notice */
+  .notice-frame { border: 1px solid var(--border-hard); background: var(--surface); margin-bottom: 24px; }
+  .notice-header { background: var(--text); color: var(--bg); padding: 14px 20px; display: flex; justify-content: space-between; align-items: baseline; }
+  .notice-header .title { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 600; }
+  .notice-header .ref { font-size: 10px; letter-spacing: 0.1em; color: #999; font-weight: 300; }
+  .notice-body { padding: 20px 24px; font-size: 14px; line-height: 2; color: var(--text); }
+  .notice-body p { margin-bottom: 14px; }
+  .notice-body p:last-child { margin-bottom: 0; }
+  .notice-footer { border-top: 1px solid var(--border); padding: 10px 20px; font-size: 11px; color: var(--muted); font-style: italic; font-family: 'IBM Plex Sans', sans-serif; }
+
+  .notice-score { margin-top: 12px; font-size: 12px; color: var(--muted); font-family: 'IBM Plex Sans', sans-serif; }
+  .notice-score span { color: var(--alert); font-family: 'IBM Plex Mono', monospace; }
+
+  /* Inline choice */
+  .inline-choice { display: inline-flex; gap: 2px; margin: 0 2px; vertical-align: middle; }
+  .inline-btn {
+    background: var(--alert-bg);
+    border: 1px solid var(--alert);
+    color: var(--alert);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 1px 7px;
+    cursor: pointer;
+    transition: all 0.1s;
+    line-height: 1.6;
+  }
+  .inline-btn:hover:not(:disabled) { background: var(--alert); color: white; }
+  .inline-btn.selected-correct { background: var(--correct); border-color: var(--correct); color: white; cursor: default; }
+  .inline-btn.selected-wrong { background: var(--wrong); border-color: var(--wrong); color: white; cursor: default; }
+  .inline-btn.reveal-correct { background: var(--correct-bg); border-color: var(--correct); color: var(--correct); cursor: default; }
+  .inline-btn:disabled { cursor: default; }
+
+  /* Nav */
+  .nav { display: flex; gap: 10px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border-hard); }
+  .nav-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover { border-color: var(--text); color: var(--text); }
+  .nav-btn.primary { background: var(--text); border-color: var(--text); color: var(--bg); }
+  .nav-btn.primary:hover { opacity: 0.75; }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+  /* Final */
+  .final-wrap { text-align: center; padding: 40px 0; }
+  .final-num { font-size: 80px; font-weight: 600; color: var(--alert); line-height: 1; letter-spacing: -0.04em; margin-bottom: 6px; }
+  .final-out { font-size: 12px; color: var(--muted); margin-bottom: 32px; letter-spacing: 0.1em; }
+  .final-msg { font-family: 'IBM Plex Sans', sans-serif; font-size: 16px; font-weight: 300; color: var(--mid); max-width: 380px; margin: 0 auto 36px; line-height: 1.7; font-style: italic; }
+
+  /* Reflection */
+  .reflection-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom: 2px solid var(--border-hard);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    padding: 14px;
+    outline: none;
+    resize: none;
+    min-height: 90px;
+    line-height: 1.7;
+    transition: border-bottom-color 0.15s;
+  }
+  .reflection-input:focus { border-bottom-color: var(--alert); }
+
+  .no-check { margin-top: 8px; font-size: 11px; color: var(--muted); font-family: 'IBM Plex Sans', sans-serif; }
+
+  /* Submit button */
+  .submit-btn {
+    margin-top: 14px;
+    background: transparent;
+    border: 1px solid var(--alert);
+    color: var(--alert);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+    width: 100%;
+  }
+  .submit-btn:hover { background: var(--alert); color: white; }
+  .submit-btn:disabled { opacity: 0.3; cursor: default; }
+
+  .submitted-note { margin-top: 10px; font-size: 12px; color: var(--correct); font-family: 'IBM Plex Sans', sans-serif; display: none; }
+  .submitted-note.show { display: block; }
+
+  /* Spacer */
+  .page-spacer { height: 24px; }
+</style>
+</head>
+<body>
+
+<!-- Holding screen -->
+<div class="holding active" id="holding">
+  <div class="chrome" style="position:fixed;top:0;left:0;right:0">
+    <span class="chrome-id">OBS/04/8B — Student Tool</span>
+    <span class="chrome-blink">● Recording</span>
+  </div>
+  <div style="margin-top: 60px">
+    <div class="holding-label">Ref: OBS/04/8B</div>
+    <div class="holding-title">Session in progress.<br>Waiting for next task.</div>
+    <div class="holding-sub">Your teacher will unlock the next section.<br>Stay in this window.</div>
+    <div class="holding-pulse"></div>
+  </div>
+</div>
+
+<!-- PAGE 0: INTRO -->
+<div class="page" id="page-0">
+  <div class="chrome">
+    <span class="chrome-id">OBS/04/8B — Student Tool</span>
+    <span class="chrome-blink">● Recording</span>
+  </div>
+  <div class="page-spacer"></div>
+  <div class="eyebrow">Klassenarbeit 04 — Review</div>
+  <h1>THE<br><span class="invert">OBSERVER</span><br>EFFECT</h1>
+  <p class="subtitle">Does being watched change what you do?<br>You are both the subject and the question.</p>
+
+  <div class="q-block">
+    <div class="q-number">Before we begin</div>
+    <div class="q-prompt">You are being observed right now.<br>Does that change how you are working?</div>
+    <textarea class="reflection-input" id="opening-reflection" placeholder="Write one honest sentence..."></textarea>
+    <div class="no-check">No check button. This one is yours. It stays private.</div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn primary" id="to-p1-btn" onclick="goTo(1)" disabled>Part One →</button>
+  </div>
+</div>
+
+<!-- PAGE 1: PASSIVE -->
+<div class="page" id="page-1">
+  <div class="chrome">
+    <span class="chrome-id">Part One — Passive Voice</span>
+    <span class="chrome-blink">● Recording</span>
+  </div>
+  <div class="page-spacer"></div>
+  <div class="eyebrow">Part One</div>
+  <h2>Who was it done by?</h2>
+  <p class="section-intro">Rewrite each sentence using the passive voice with <strong style="color:var(--alert)">"by"</strong>.</p>
+
+  <div class="score-bar">
+    <span class="score-label">Score</span>
+    <span class="score-val" id="p1-score">0</span>
+    <span class="score-total">/ 6</span>
+  </div>
+
+  <div class="q-block" id="p1q1">
+    <div class="q-number">Question 01</div>
+    <div class="q-prompt">Psychologist <strong>Edward Thorndike</strong> first described the observer effect.<br><span class="hint">→ The observer effect ___________</span></div>
+    <input type="text" class="answer-input" id="p1q1-ans" placeholder="The observer effect ...">
+    <button class="check-btn" onclick="checkPassive('p1q1','p1q1-ans',['was first described by edward thorndike','was first described by psychologist edward thorndike'])">Check</button>
+    <div class="feedback" id="p1q1-fb"></div>
+  </div>
+
+  <div class="q-block" id="p1q2">
+    <div class="q-number">Question 02</div>
+    <div class="q-prompt">Scientists <strong>installed cameras</strong> in the factory to monitor the workers.<br><span class="hint">→ Cameras ___________</span></div>
+    <input type="text" class="answer-input" id="p1q2-ans" placeholder="Cameras ...">
+    <button class="check-btn" onclick="checkPassive('p1q2','p1q2-ans',['were installed in the factory by scientists','were installed by scientists in the factory','were installed by scientists to monitor the workers','were installed in the factory by scientists to monitor the workers'])">Check</button>
+    <div class="feedback" id="p1q2-fb"></div>
+  </div>
+
+  <div class="q-block" id="p1q3">
+    <div class="q-number">Question 03</div>
+    <div class="q-prompt">The government <strong>introduced CCTV cameras</strong> in city centres in the 1990s.<br><span class="hint">→ CCTV cameras ___________</span></div>
+    <input type="text" class="answer-input" id="p1q3-ans" placeholder="CCTV cameras ...">
+    <button class="check-btn" onclick="checkPassive('p1q3','p1q3-ans',['were introduced in city centres by the government in the 1990s','were introduced by the government in city centres in the 1990s','were introduced in the 1990s by the government','were introduced by the government in the 1990s'])">Check</button>
+    <div class="feedback" id="p1q3-fb"></div>
+  </div>
+
+  <hr class="divider">
+  <div class="divider-label">Passive Questions</div>
+
+  <div class="q-block" id="p1q4">
+    <div class="q-number">Question 04</div>
+    <div class="q-prompt"><strong>(When / the experiment / conduct?)</strong><br><span class="hint">Jack says: "They conducted the experiment in 1955."</span></div>
+    <input type="text" class="answer-input" id="p1q4-ans" placeholder="When ...?">
+    <button class="check-btn" onclick="checkPassive('p1q4','p1q4-ans',['when was the experiment conducted','when was the experiment conducted?'])">Check</button>
+    <div class="feedback" id="p1q4-fb"></div>
+  </div>
+
+  <div class="q-block" id="p1q5">
+    <div class="q-number">Question 05</div>
+    <div class="q-prompt"><strong>(Who / this footage / record / by?)</strong><br><span class="hint">Jack says: "Someone recorded this footage secretly."</span></div>
+    <input type="text" class="answer-input" id="p1q5-ans" placeholder="Who ...?">
+    <button class="check-btn" onclick="checkPassive('p1q5','p1q5-ans',['who was this footage recorded by','who was this footage recorded by?'])">Check</button>
+    <div class="feedback" id="p1q5-fb"></div>
+  </div>
+
+  <div class="q-block" id="p1q6">
+    <div class="q-number">Question 06</div>
+    <div class="q-prompt"><strong>(What / observe / right now?)</strong><br><span class="hint">Jack says: "Someone is observing something right now."</span></div>
+    <input type="text" class="answer-input" id="p1q6-ans" placeholder="What ...?">
+    <button class="check-btn" onclick="checkPassive('p1q6','p1q6-ans',['what is being observed right now','what is being observed right now?'])">Check</button>
+    <div class="feedback" id="p1q6-fb"></div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn" onclick="goTo(0)">← Back</button>
+    <button class="nav-btn primary" id="to-p2-btn" onclick="goTo(2)" disabled>Part Two →</button>
+  </div>
+</div>
+
+<!-- PAGE 2: SURVEILLANCE NOTICE -->
+<div class="page" id="page-2">
+  <div class="chrome">
+    <span class="chrome-id">Part Two — Conjunctions</span>
+    <span class="chrome-blink">● Recording</span>
+  </div>
+  <div class="page-spacer"></div>
+  <div class="eyebrow">Part Two</div>
+  <h2>Notice of Surveillance</h2>
+  <p class="section-intro">Read the official notice. Tap the correct conjunction. One tap per gap — no going back. Read the full sentence before you decide.</p>
+
+  <div class="score-bar">
+    <span class="score-label">Score</span>
+    <span class="score-val" id="p2-score">0</span>
+    <span class="score-total">/ 10</span>
+  </div>
+
+  <div class="notice-frame">
+    <div class="notice-header">
+      <span class="title">Notice of Surveillance</span>
+      <span class="ref">Ref: OBS/04/8B</span>
+    </div>
+    <div class="notice-body" id="notice-body">Loading...</div>
+    <div class="notice-footer">Issued by the Department of Institutional Oversight. Compliance is assumed. Cooperation is appreciated.</div>
+  </div>
+
+  <div class="notice-score">Correct: <span id="notice-correct">0</span> / 10</div>
+
+  <div class="nav">
+    <button class="nav-btn" onclick="goTo(1)">← Back</button>
+    <button class="nav-btn primary" onclick="goTo(3)">Finish →</button>
+  </div>
+</div>
+
+<!-- PAGE 3: CLOSE -->
+<div class="page" id="page-3">
+  <div class="chrome">
+    <span class="chrome-id">Session complete — OBS/04/8B</span>
+    <span class="chrome-blink">● Recording</span>
+  </div>
+  <div class="page-spacer"></div>
+  <div class="eyebrow">End of session</div>
+  <h1>So —<br>who was <span class="alert-col">observed?</span></h1>
+
+  <div class="final-wrap">
+    <div class="final-num" id="final-num">0</div>
+    <div class="final-out">out of 16</div>
+    <div class="final-msg" id="final-msg">—</div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-number">Final task</div>
+    <div class="q-prompt">Write one sentence using the passive voice and one conjunction to describe what happened in this room today.</div>
+    <textarea class="reflection-input" id="final-sentence" placeholder="e.g. Although we knew we were being observed, we still..."></textarea>
+    <button class="submit-btn" id="submit-btn" onclick="submitFinal()">Submit to projector →</button>
+    <div class="submitted-note" id="submitted-note">✓ Submitted. Your sentence may appear on the projector.</div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn" onclick="goTo(2)">← Back</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, push, set }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const app = initializeApp({
+  databaseURL: "https://grammarblitz-12d4d-default-rtdb.europe-west1.firebasedatabase.app"
+});
+const db = getDatabase(app);
+const sessionRef = ref(db, 'obs04/session');
+const sentencesRef = ref(db, 'obs04/sentences');
+
+// State
+let p1Score = 0, p2Score = 0;
+const p1Answered = {}, p2Answered = {};
+let noticeRendered = false;
+let currentPage = 'holding';
+
+// Listen for session state
+onValue(sessionRef, snap => {
+  const state = snap.val() || {};
+  handleState(state);
+});
+
+function handleState(state) {
+  const phase = state.phase || 'waiting';
+
+  // Show holding screen or correct page
+  if (phase === 'waiting') {
+    showHolding('Session in progress.', 'Waiting for next task.');
+    return;
+  }
+
+  if (phase === 'open0') {
+    hideHolding();
+    if (currentPage === 'holding') goTo(0);
+  }
+
+  if (phase === 'open1') {
+    document.getElementById('to-p1-btn').disabled = false;
+    hideHolding();
+    if (currentPage === 'holding') goTo(1);
+  }
+
+  if (phase === 'open2') {
+    document.getElementById('to-p1-btn').disabled = false;
+    document.getElementById('to-p2-btn').disabled = false;
+    hideHolding();
+    if (currentPage === 'holding' || currentPage === '1') goTo(2);
+  }
+}
+
+function showHolding(title, sub) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const h = document.getElementById('holding');
+  h.querySelector('.holding-title').textContent = title;
+  h.querySelector('.holding-sub').textContent = sub;
+  h.classList.add('active');
+  currentPage = 'holding';
+}
+
+function hideHolding() {
+  document.getElementById('holding').classList.remove('active');
+}
+
+window.goTo = function(n) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('holding').classList.remove('active');
+  document.getElementById('page-' + n).classList.add('active');
+  currentPage = String(n);
+  window.scrollTo(0, 0);
+  if (n === 2) renderNotice();
+  if (n === 3) updateFinal();
+};
+
+// Passive checker
+function norm(s) {
+  return s.toLowerCase().replace(/[?.!,]/g,'').replace(/\s+/g,' ').trim();
+}
+
+window.checkPassive = function(qid, inputId, accepted) {
+  if (p1Answered[qid]) return;
+  const val = norm(document.getElementById(inputId).value);
+  const block = document.getElementById(qid);
+  const fb = document.getElementById(qid + '-fb');
+  const btn = block.querySelector('.check-btn');
+
+  let correct = false;
+  for (const a of accepted) {
+    if (val === norm(a)) { correct = true; break; }
+    const aw = norm(a).split(' ');
+    const vw = val.split(' ');
+    if (aw.every(w => vw.includes(w))) { correct = true; break; }
+  }
+
+  p1Answered[qid] = true;
+  document.getElementById(inputId).disabled = true;
+  btn.disabled = true;
+
+  if (correct) {
+    p1Score++;
+    block.classList.add('answered-correct');
+    fb.className = 'feedback correct show';
+    fb.innerHTML = '✓ Correct.';
+  } else {
+    block.classList.add('answered-wrong');
+    fb.className = 'feedback wrong show';
+    fb.innerHTML = '✗ Not quite. <div class="model">' + accepted[0] + '</div>';
+  }
+  document.getElementById('p1-score').textContent = p1Score;
+};
+
+// Notice
+const segments = [
+  { t: 'This facility is monitored at all times ' },
+  { choices: ['so that','because','until'], correct: 'so that', id: 'n1' },
+  { t: ' the safety, conduct, and performance of all individuals can be assessed and recorded. Cameras and observation systems have been installed throughout the building ' },
+  { choices: ['although','because','when'], correct: 'because', id: 'n2' },
+  { t: ' research has consistently demonstrated that the presence of monitoring influences behaviour.' },
+  { t: '\n\nYou may not feel watched ' },
+  { choices: ['until','although','as soon as'], correct: 'although', id: 'n3' },
+  { t: ' observation is continuous and total. All activity is logged ' },
+  { choices: ['until','before','when'], correct: 'until', id: 'n4' },
+  { t: ' the session is formally closed. ' },
+  { choices: ['As soon as','Before','Just as'], correct: 'As soon as', id: 'n5' },
+  { t: ' you entered this room, your actions became part of the official record.' },
+  { t: '\n\n' },
+  { choices: ['Before','After','Although'], correct: 'Before', id: 'n6' },
+  { t: ' you proceed with any task, you should understand that data collected during this session may be reviewed and used for evaluative purposes. Observers will remain present ' },
+  { choices: ['although','so that','when'], correct: 'when', id: 'n7' },
+  { t: ' required. Their presence should not be considered unusual.' },
+  { t: '\n\nParticipants are reminded that performance under observation has been shown to differ from performance in unmonitored conditions. ' },
+  { choices: ['Though','Because','Until'], correct: 'Though', id: 'n8' },
+  { t: ' you are free to act as you wish, it should be noted that all responses — including this one — are being read.' },
+  { t: '\n\n' },
+  { choices: ['When','After','Although'], correct: 'After', id: 'n9' },
+  { t: ' this session ends, records will be retained. ' },
+  { choices: ['Although','When','Before'], correct: 'When', id: 'n10' },
+  { t: ' individuals know they are being observed, they typically modify their behaviour. This is expected. This is the point.' },
+];
+
+function renderNotice() {
+  if (noticeRendered) return;
+  noticeRendered = true;
+  const body = document.getElementById('notice-body');
+  let html = '';
+  for (const seg of segments) {
+    if (seg.t !== undefined) {
+      html += seg.t.replace(/\n\n/g, '</p><p>');
+    } else {
+      html += '<span class="inline-choice" id="nc-' + seg.id + '">';
+      for (const c of seg.choices) {
+        html += `<button class="inline-btn" onclick="pickConj('${seg.id}','${c}','${seg.correct}')">${c}</button>`;
+      }
+      html += '</span>';
+    }
+  }
+  body.innerHTML = '<p>' + html + '</p>';
+}
+
+window.pickConj = function(id, chosen, correct) {
+  if (p2Answered[id]) return;
+  p2Answered[id] = true;
+  const isCorrect = norm(chosen) === norm(correct);
+  if (isCorrect) {
+    p2Score++;
+    document.getElementById('p2-score').textContent = p2Score;
+    document.getElementById('notice-correct').textContent = p2Score;
+  }
+  const container = document.getElementById('nc-' + id);
+  container.querySelectorAll('.inline-btn').forEach(btn => {
+    btn.disabled = true;
+    const bt = btn.textContent.trim();
+    if (norm(bt) === norm(correct)) {
+      btn.classList.add(isCorrect && norm(bt) === norm(chosen) ? 'selected-correct' : 'reveal-correct');
+    } else if (norm(bt) === norm(chosen) && !isCorrect) {
+      btn.classList.add('selected-wrong');
+    }
+  });
+};
+
+function updateFinal() {
+  const total = p1Score + p2Score;
+  document.getElementById('final-num').textContent = total;
+  const msgs = [
+    [15, 'The observer was impressed. So were you.'],
+    [12, 'Strong. A little more attention to passive questions and you\'re ready.'],
+    [8,  'Solid. Review your conjunctions before Wednesday.'],
+    [0,  'More practice needed — but you\'ve seen the patterns now.']
+  ];
+  const msg = msgs.find(([min]) => total >= min);
+  document.getElementById('final-msg').textContent = msg[1];
+}
+
+window.submitFinal = function() {
+  const text = document.getElementById('final-sentence').value.trim();
+  if (!text) return;
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  push(sentencesRef, {
+    text,
+    ts: Date.now(),
+    projected: false
+  }).then(() => {
+    document.getElementById('submitted-note').classList.add('show');
+  });
+};
+
+</script>
+</body>
+</html>
