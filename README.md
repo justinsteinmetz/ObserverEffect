@@ -1,6 +1,6 @@
 https://justinsteinmetz.github.io/ObserverEffect/
 
-Here's the text — you can paste it straight into the README.md file on GitHub by clicking the pencil icon next to it:
+
 
 ---
 
